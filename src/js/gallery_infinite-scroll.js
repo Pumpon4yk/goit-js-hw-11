@@ -5,7 +5,7 @@ import throttle from 'lodash.throttle';
 import "simplelightbox/dist/simple-lightbox.min.css";
 
 import getApi from './getApi';
-import cardTml from "../partials/card.hbs"
+import cardTml from "../partials/card.hbs";
 
 const form = document.querySelector('.search-form');
 const gallery = document.querySelector('.gallery');
@@ -14,37 +14,41 @@ const spiner = document.querySelector('.loader')
 let name = '';
 let page = 1;
 let response = {};
-const throttled = throttle(checkPosition, 300)
+const throttled = throttle(checkPosition, 300);
+const lightbox = new SimpleLightbox('.gallery a');
 
-form.addEventListener('submit', searchFoto)
+
+form.addEventListener('submit', searchFoto);
 
 async function searchFoto(e) {
-    e.preventDefault()
-    name = e.currentTarget.elements.searchQuery.value
+    e.preventDefault();
+    name = e.currentTarget.elements.searchQuery.value.trim();
 
     gallery.innerHTML = '';
     page = 1;
-    response = {}
+    response = {};
 
-    spin()
+    spin();
 
-    window.scrollBy(0, -75)
-    window.removeEventListener('scroll', throttled)
+    window.scrollBy(0, -75);
+    window.removeEventListener('scroll', throttled);
 
     if (name === '') {
+        spin();
         return Notify.warning("No data to search");
     }
 
     try {
-        response = await getApi(name)
+        response = await getApi(name, page)
         if (response.data.hits.length === 0) {
+            spin();
             return Notify.failure("Sorry, there are no images matching your search query. Please try again.");
         }
-        creatCard(response)
-        window.addEventListener('scroll', throttled)
-        spin()
+        creatCard(response);
+        window.addEventListener('scroll', throttled);
+        spin();
     } catch (error) {
-        spin()
+        spin();
 
         console.log(error);
         return Notify.info("We're sorry, but you've reached the end of search results.");
@@ -56,10 +60,7 @@ function creatCard(arr) {
         Notify.success(`Hooray! We found ${arr.data.totalHits} images.`);
     }
     gallery.insertAdjacentHTML('beforeend', cardTml(arr.data.hits));
-
-    const lightbox = new SimpleLightbox('.gallery a');
-    lightbox.on('show.simplelightbox')
-
+    lightbox.refresh();
 }
 
 function checkPosition() {
@@ -73,14 +74,14 @@ function checkPosition() {
         if (y >= contentHeight) {
             if (response.data.hits.length === 0) {
                 Notify.info("We're sorry, but you've reached the end of search results.");
-                window.removeEventListener('scroll', throttled)
-                return
+                window.removeEventListener('scroll', throttled);
+                return;
             }
-            loadMore()
-            spin()
+            loadMore();
+            spin();
         }
     } catch (error) {
-        window.removeEventListener('scroll', throttled)
+        window.removeEventListener('scroll', throttled);
     }
 }
 
@@ -88,21 +89,21 @@ async function loadMore() {
     page += 1;
 
     try {
-        response = await getApi(name, page)
-        creatCard(response)
-        spin()
+        response = await getApi(name, page);
+        creatCard(response);
+        spin();
     } catch (error) {
-        spin()
-        window.removeEventListener('scroll', throttled)
+        spin();
+        window.removeEventListener('scroll', throttled);
         return Notify.info("We're sorry, but you've reached the end of search results.");
     }
 }
 
 function spin() {
     if (spiner.classList.contains("is-hidden")) {
-        return spiner.classList.remove('is-hidden')
+        return spiner.classList.remove('is-hidden');
     }
-    return spiner.classList.add('is-hidden')
+    return spiner.classList.add('is-hidden');
 }
 
 
