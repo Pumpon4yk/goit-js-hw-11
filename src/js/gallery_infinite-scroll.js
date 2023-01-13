@@ -75,7 +75,6 @@ function checkPosition(entries, observer) {
     // const y = yOffset + window_height;
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-        console.log(entries);
         if (response.data.hits.length === 0) {
             Notify.info("We're sorry, but you've reached the end of search results.");
             return observer.unobserve(spiner);
