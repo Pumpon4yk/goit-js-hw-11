@@ -1,6 +1,5 @@
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import SimpleLightbox from "simplelightbox";
-import throttle from 'lodash.throttle';
 
 import "simplelightbox/dist/simple-lightbox.min.css";
 
@@ -14,11 +13,18 @@ const spiner = document.querySelector('.loader')
 let name = '';
 let page = 1;
 let response = {};
-const throttled = throttle(checkPosition, 300);
 const lightbox = new SimpleLightbox('.gallery a');
 
 
 form.addEventListener('submit', searchFoto);
+
+const options = {
+    root: null,
+    rootMargin: '300px',
+    threshold: 1.0
+}
+
+const observer = new IntersectionObserver(checkPosition, options);
 
 async function searchFoto(e) {
     e.preventDefault();
@@ -31,7 +37,6 @@ async function searchFoto(e) {
     spin();
 
     window.scrollBy(0, -75);
-    window.removeEventListener('scroll', throttled);
 
     if (name === '') {
         spin();
@@ -45,8 +50,8 @@ async function searchFoto(e) {
             return Notify.failure("Sorry, there are no images matching your search query. Please try again.");
         }
         creatCard(response);
-        window.addEventListener('scroll', throttled);
         spin();
+        observer.observe(spiner)
     } catch (error) {
         spin();
 
@@ -63,26 +68,24 @@ function creatCard(arr) {
     lightbox.refresh();
 }
 
-function checkPosition() {
-    const contentHeight = gallery.offsetHeight;      // 1) высота блока контента вместе с границами
-    const yOffset = window.pageYOffset;      // 2) текущее положение скролбара
-    const window_height = window.innerHeight;      // 3) высота внутренней области окна документа
-    const y = yOffset + window_height;
-
-    try {
-        // если пользователь достиг конца
-        if (y >= contentHeight) {
-            if (response.data.hits.length === 0) {
-                Notify.info("We're sorry, but you've reached the end of search results.");
-                window.removeEventListener('scroll', throttled);
-                return;
-            }
+function checkPosition(entries, observer) {
+    // const contentHeight = gallery.offsetHeight;      // 1) высота блока контента вместе с границами
+    // const yOffset = window.pageYOffset;      // 2) текущее положение скролбара
+    // const window_height = window.innerHeight;      // 3) высота внутренней области окна документа
+    // const y = yOffset + window_height;
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+        console.log(entries);
+        if (response.data.hits.length === 0) {
+            Notify.info("We're sorry, but you've reached the end of search results.");
+            return observer.unobserve(spiner);
+        }
             loadMore();
             spin();
+
+            
         }
-    } catch (error) {
-        window.removeEventListener('scroll', throttled);
-    }
+    })
 }
 
 async function loadMore() {
@@ -94,7 +97,7 @@ async function loadMore() {
         spin();
     } catch (error) {
         spin();
-        window.removeEventListener('scroll', throttled);
+        observer.unobserve(spiner);
         return Notify.info("We're sorry, but you've reached the end of search results.");
     }
 }
